@@ -11,8 +11,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Import our modules
-from textract_handler import extract_blocks, parse_fields
-from csv_writer import write_csv
+try:
+    # Try relative imports first (when run as module with -m)
+    from .textract_handler import extract_blocks, parse_fields
+    from .csv_writer import write_csv
+except ImportError:
+    # Fall back to absolute imports (when run directly)
+    from textract_handler import extract_blocks, parse_fields
+    from csv_writer import write_csv
 
 
 def validate_environment():
