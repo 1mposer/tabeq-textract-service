@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Processor Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            margin: 30px 0;
+            background: rgba(102, 126, 234, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #764ba2;
+            background: rgba(118, 75, 162, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .drop-zone-content {
+            pointer-events: none;
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .drop-zone h3 {
+            color: #333;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone p {
+            color: #666;
+            font-size: 1em;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .progress {
+            display: none;
+            margin: 20px 0;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .status.success {
+            background: rgba(56, 239, 125, 0.1);
+            color: #11998e;
+            border: 1px solid rgba(17, 153, 142, 0.3);
+        }
+
+        .status.error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ee5a52;
+            border: 1px solid rgba(238, 90, 82, 0.3);
+        }
+
+        .file-list {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .file-item {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-item.processing {
+            background: rgba(255, 193, 7, 0.1);
+        }
+
+        .file-item.success {
+            background: rgba(56, 239, 125, 0.1);
+        }
+
+        .file-item.error {
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Receipt Processor</h1>
+            <p>Upload your receipt images and get CSV exports</p>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-content">
+                <span class="upload-icon">📤</span>
+                <h3>Drag & Drop Receipt Images</h3>
+                <p>or click here to select files</p>
+                <small style="color: #999; margin-top: 10px; display: block;">
+                    Supports: JPG, PNG, TIFF, PDF
+                </small>
+            </div>
+        </div>
+
+        <input type="file" id="fileInput" class="file-input" multiple accept=".jpg,.jpeg,.png,.tiff,.tif,.pdf,.gif">
+
+        <div class="progress" id="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="file-list" id="fileList"></div>
+
+        <div class="buttons">
+            <button class="btn btn-primary" id="importBtn">
+                <span>📁</span> Import Files
+            </button>
+            <button class="btn btn-primary" id="startBtn" disabled>
+                <span>🚀</span> Start Processing
+            </button>
+            <button class="btn btn-secondary" id="downloadBtn" disabled>
+                <span>⬇️</span> Download CSV
+            </button>
+            <button class="btn btn-danger" id="clearBtn">
+                <span>🗑️</span> Clear All
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const importBtn = document.getElementById('importBtn');
+        const startBtn = document.getElementById('startBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const progress = document.getElementById('progress');
+        const progressBar = document.getElementById('progressBar');
+        const status = document.getElementById('status');
+        const fileList = document.getElementById('fileList');
+
+        let selectedFiles = [];
+
+        // Drag and drop functionality
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        });
+
+        function handleFiles(files) {
+            selectedFiles = files.filter(file => {
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/tiff', 'image/gif', 'application/pdf'];
+                return validTypes.includes(file.type) || file.name.toLowerCase().match(/\.(jpg|jpeg|png|tiff|tif|gif|pdf)$/);
+            });
+
+            displayFileList();
+        }
+
+        function displayFileList() {
+            fileList.innerHTML = '';
+            if (selectedFiles.length === 0) {
+                startBtn.disabled = true;
+                return;
+            }
+
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>${file.name}</span>
+                    <span style="color: #666; font-size: 0.9em;">${(file.size / 1024).toFixed(1)} KB</span>
+                `;
+                fileItem.id = `file-${index}`;
+                fileList.appendChild(fileItem);
+            });
+
+            startBtn.disabled = false;
+        }
+
+        importBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        startBtn.addEventListener('click', () => {
+            if (selectedFiles.length === 0) {
+                showStatus('Please select files first!', 'error');
+                return;
+            }
+
+            uploadFiles();
+        });
+
+        async function uploadFiles() {
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            // Show progress
+            progress.style.display = 'block';
+            progressBar.style.width = '0%';
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<span>⏳</span> Processing...';
+
+            // Mark files as processing
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.getElementById(`file-${index}`);
+                if (fileItem) {
+                    fileItem.classList.add('processing');
+                }
+            });
+
+            try {
+                progressBar.style.width = '30%';
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                progressBar.style.width = '70%';
+
+                const result = await response.json();
+
+                progressBar.style.width = '100%';
+
+                if (result.success) {
+                    showStatus(`Successfully processed ${result.total_processed} receipts!`, 'success');
+                    downloadBtn.disabled = false;
+
+                    // Mark files as success or error
+                    result.results.forEach((res, index) => {
+                        const fileItem = document.getElementById(`file-${index}`);
+                        if (fileItem) {
+                            fileItem.classList.remove('processing');
+                            fileItem.classList.add(res.success ? 'success' : 'error');
+                        }
+                    });
+                } else {
+                    showStatus('Processing failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<span>🚀</span> Start Processing';
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }, 1000);
+            }
+        }
+
+        downloadBtn.addEventListener('click', async () => {
+            try {
+                downloadBtn.disabled = true;
+                downloadBtn.innerHTML = '<span>⏳</span> Preparing...';
+
+                const response = await fetch('/download-csv', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+
+                    // Check if blob has content
+                    if (blob.size === 0) {
+                        showStatus('No data to download. Please process some files first.', 'error');
+                        return;
+                    }
+
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `receipt_export_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.zip`;
+
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // Clean up
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 100);
+
+                    showStatus('CSV files downloaded successfully!', 'success');
+                } else {
+                    let errorMessage = 'Download failed';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    showStatus(errorMessage, 'error');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                showStatus(`Download error: ${error.message}`, 'error');
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = '<span>⬇️</span> Download CSV';
+            }
+        });
+
+        clearBtn.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to clear all files?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/clear');
+                const result = await response.json();
+
+                if (result.success) {
+                    selectedFiles = [];
+                    fileList.innerHTML = '';
+                    fileInput.value = '';
+                    downloadBtn.disabled = true;
+                    startBtn.disabled = true;
+                    showStatus('All files cleared successfully!', 'success');
+                } else {
+                    showStatus(`Clear failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+
+        // Auto-hide status on click
+        status.addEventListener('click', () => {
+            status.style.display = 'none';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.dist-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+output/
+web_uploads/
+web_output/
+*.csv
+*.zip
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.tiff
+!examples/*.jpg
+!examples/*.csv
+!receipts/*.jpg
+!receipts/*.jpeg
+!receipts/*.png
+
+# AWS
+.aws/
+awscliv2/
+awscliv2.zip
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Claude
+.claude/
