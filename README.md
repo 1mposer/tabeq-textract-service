@@ -1,75 +1,82 @@
-# Synchronously process your receipt and invoice images using Amazon Textract AnalyzeExpense
+# AWS Receipt Reader — OneDrive Edition
 
+This module forms part of the Ricochet Analytics pipeline under Tabeq Technologies LLC.
 
-## Introduction
-Receipts and invoices are special types of documents that are critical to small, medium businesses (SMBs), startups, and enterprises for managing their accounts payable process. These types of documents are difficult to process at scale because they follow no set design rules, yet any individual customer encounters thousands of distinct types of these documents. In this sample, you can use Amazon Textract to extract data from any invoice or receipt (in English) without any required machine learning (ML) experience or templates or configuration. Amazon Textract extracts a set of standard fields and related line-item details from your receipts and this solution provide pretty printing capabilities to output this data in various formats including .csv, txt and others.
+A local Python microservice that converts scanned receipts into structured CSV data using AWS Textract.
 
-## Architecture
+## Overview
 
-![architecture](architecture.png)
+This microservice is designed for use with the Ricochet POS system. It runs locally, receives scanned receipt images from Microsoft Lens via OneDrive synchronization, and outputs structured CSV files containing extracted expense data.
 
-At a high level, the solution architecture includes the following steps:
-1.	Sets up an Amazon S3 source and output buckets storing raw expense documents images in png, jpg(jpeg) formats.
-2.	Configures an Event Rule based on event pattern in Amazon EventBridge to match incoming S3 PutObject events in the S3 folder containing the raw expense document images.
-3.	Configured EventBridge Event Rule sends the event to an AWS Lambda function for futher analysis and processing.
-4.	AWS Lambda function reads the images from Amazon S3, calls Amazon Textract AnalyzeExpense API, uses Amazon Textract Response Parser to de-serialize the JSON response and uses Amazon Textract PrettyPrinter to easily print the parsed response and stores the results back to Amazon S3 in different formats.
+## Features
 
-## Prerequisites
-1. python
-2. AWS CLI
+- Local CLI for manual processing of receipt images.
+- Watcher mode to automatically monitor a OneDrive input folder and process new receipts as they arrive.
+- Uses AWS Textract AnalyzeExpense for OCR and extraction of expense fields.
+- Robust regex parsing for date, start time, end time, and total fields.
+- Outputs CSV files with the columns: `date, start_time, end_time, total, source_file, processed_at`.
 
-## Deployment
+## Installation & Setup
 
-Two ways you could deploy this solution
+1. Create and activate a Python virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Copy the example environment file and configure your AWS credentials and region:
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` and set:
+   ```env
+   AWS_ACCESS_KEY_ID=your-access-key-id
+   AWS_SECRET_ACCESS_KEY=your-secret-access-key
+   AWS_REGION=us-east-1
+   ```
 
-### Option 1 - Custom deployment
-1. Download this git repo on your local machine
-2. Install Amazon Textract Pretty Printer and Response Parser
-```
-cd amazon-textract-analyzeexpense
+## Usage
 
-python -m pip install --target=./ amazon-textract-response-parser
+### CLI Example
 
-python -m pip install --target=./ amazon-textract-prettyprinter
-```
-3. Create lambda function deployment package (.zip) file
-```
-zip -r archive.zip .
-```
-4. Next, copy archive.zip file to a s3 bucket of your choice.
-```
-aws s3 cp archive.zip s3://my-source-bucket
-```
-If you need to create a new bucket in us-east-1
->`aws s3api create-bucket --bucket my-source-bucket --region us-east-1`
->
-And, for all other regions, add `--create-bucket-configuration` option
->`aws s3api create-bucket --bucket my-source-bucket --region us-west-2 --create-bucket-configuration LocationConstraint=us-west-2`
-
-5. Open template.yaml file, replace s3 bucket name under "EventConsumerFunction:" section with your s3 bucket name, and save.
-6. Finally, deploy this solution
-```
-aws cloudformation deploy --template-file template.yaml --stack-name myTextractAnalyzeExpense --capabilities CAPABILITY_NAMED_IAM
+Process a single receipt image manually:
+```bash
+python -m src.main --in receipts/sample1.jpg --out output/ingest.csv
 ```
 
+### Watcher Example
 
-### Option 2 - Auto deploy using cloudformation template
-Alternatively, deploy this solution in `us-east-1` using a pre-configured CloudFormation template -
-1.	Choose Launch Stack to configure the notebook in the US East (N. Virginia) Region:
+Monitor a OneDrive folder and automatically process new receipts:
+```bash
+python -m src.watcher \
+  --in "C:\Users\<user>\OneDrive\Ricochet\Receipts\Input" \
+  --out "C:\Users\<user>\OneDrive\Ricochet\Receipts\Output\ingest.csv"
+```
 
-[![cfnlaunchstack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=textract-analyzexpense-demo&templateURL=https://aws-blogs-artifacts-public.s3.amazonaws.com/artifacts/ML-3911/Textract-Analyze-Expense-Demo.yaml)
+**Note:** For real-world scanning, use the Microsoft Lens app to scan receipts and sync them to the designated OneDrive input folder.
 
-2. Don’t make any changes to stack name or parameters.
-3. In the Capabilities section, select I acknowledge that AWS CloudFormation might create IAM resources.
-4. Choose Create stack.
+## Dependencies
 
-## Test
-In order to test the solution, upload the receipts/invoice images in the Amazon S3 bucket created by CloudFormation template. This will trigger an event to invoke AWS Lambda function which will call the Amazon Textract AnalyzeExpense API, parse the response JSON, convert the parsed response into csv format and store it back to the same Amazon S3 Bucket. You can extend the provided AWS Lambda function further based on your requirements and also change the output format to other types like tsv, grid, latex and many more by setting the appropriate value of output_type when calling get_string method of textractprettyprinter.t_pretty_print_expense in Amazon Textract PrettyPrinter.
+All dependencies are listed in `requirements.txt`:
+- `boto3`
+- `pandas`
+- `python-dotenv`
+- `Pillow`
+- `watchdog`
 
-## Clean up
+## Security
 
-Deleting the CloudFormation Stack will remove the Lambda functions, EventBridge rules and other resources created by this solution. Ensure the S3 buckets are empty before attempting to delete this stack.
+- Store AWS credentials and configuration only in your local `.env` file. Never commit `.env` or sensitive credentials to version control.
+- Use an AWS IAM user with least-privilege permissions for Textract AnalyzeExpense access.
+
+## Roadmap
+
+- **v0.1.0-onedrive** — Current release: local CLI and watcher functionality.
+- **Future:** Integrate an API ingestion endpoint for backend system integration.
 
 ## License
 
-This library is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file.
+This project is licensed under the MIT-0 License. See the [LICENSE](LICENSE) file for details.
